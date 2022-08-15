@@ -1,0 +1,32 @@
+plugins {
+    id('com.github.jomof.cxx.core') version '0.0.1'
+}
+configurations {
+    debug { }
+    release { }
+}
+cxx {
+    var compile = rule {
+        description = "Building $out"
+        depfile = "${out}.d"
+        command = "clang $cflags -c $in -o $out -MD -MF $depfile"
+    }
+    var link = rule {
+        description = "Linking $out"
+        command = "clang $in -o $out"
+     }
+    for (configuration in configurations) {
+        for(int i = 0; i<5; i++) {
+            var variant = "${configuration.name}$i"
+            compile {
+                in = "hello.c"
+                out = "obj/$variant/hello.o"
+                cflags = "-Weverything"
+            }
+            link {
+                in = "obj/$variant/hello.o"
+                out = "bin/$variant/hello"
+            }
+        }
+    }
+}

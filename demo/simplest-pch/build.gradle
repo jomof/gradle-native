@@ -1,0 +1,34 @@
+plugins {
+    id('com.github.jomof.cxx.core') version '0.0.1'
+}
+cxx {
+    var pch = rule {
+        description = "Building PCH $out"
+        depfile = "${out}.d"
+        command = "clang -x c-header $in -o $out -MD -MF $depfile"
+    }
+    var compile = rule {
+        description = "Building $out"
+        depfile = "${out}.d"
+        command = "clang -include-pch $pch $cflags -c $source -o $out -MD -MF $depfile"
+    }
+    var link = rule {
+        description = "Linking $out"
+        command = "clang $pch $in -o $out"
+    }
+    var common = pch {
+        in = "common.h"
+        out = "obj/common.h.pch"
+    }
+    var hello = compile {
+        source = "hello.c"
+        pch = common.out
+        in = [ source, pch ]
+        out = "obj/hello.o"
+        cflags = "-Weverything"
+    }
+    link {
+        in = hello.out
+        out = "bin/hello"
+    }
+}

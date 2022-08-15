@@ -4,11 +4,12 @@ plugins {
 cxx {
     var compile = rule {
         description = "Building $out"
-        command = "clang $cflags -c $in -o$out"
+        depfile = "${out}.d"
+        command = "clang $cflags -c $in -o $out -MD -MF $depfile"
     }
     var link = rule {
         description = "Linking $out"
-        command = "clang $in -o$out"
+        command = "clang $in -o $out"
      }
     compile {
         in = "hello.c"

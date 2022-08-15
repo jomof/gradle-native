@@ -17,23 +17,23 @@ class SimplestProjectTest {
     private val settingsFile by lazy { projectDir.resolve("settings.gradle") }
 
     @Test fun `can run task`() {
+        projectDir.resolve("obj/hello.o.d").delete()
+        projectDir.resolve("hello.h").writeText("""
+            #define MESSAGE "Hello, World!\n"
+            
+        """.trimIndent())
+        println("HELLO is at ${projectDir.resolve("hello.h")}")
         projectDir.resolve("hello.c").writeText("""
             #include <stdio.h>
+            #include "hello.h"
+            
             int main() {
-               printf("Hello, World!\n");
+               printf(MESSAGE);
                return 0;
             }
             
         """.trimIndent())
-        val localRepo = File("../local-plugin-repository").absolutePath
-        settingsFile.writeText("""
-            pluginManagement {
-                repositories {
-                    maven { url '$localRepo' }
-                    mavenCentral()
-                }
-            }
-        """.trimIndent())
+        settingsFile.writeText("")
         buildFile.writeText("""
             plugins {
                 id('com.github.jomof.cxx.core') version '0.0.1'
@@ -41,11 +41,12 @@ class SimplestProjectTest {
             cxx {
                 var compile = rule {
                     description = "Building ${'$'}out"
-                    command = "clang ${'$'}cflags -c ${'$'}in -o${'$'}out"
+                    depfile = "${'$'}{out}.d"
+                    command = "clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
                 var link = rule {
                     description = "Linking ${'$'}out"
-                    command = "clang ${'$'}in -o${'$'}out"
+                    command = "clang ${'$'}in -o ${'$'}out"
                  }
                 compile {
                     in = "hello.c"
@@ -63,14 +64,27 @@ class SimplestProjectTest {
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("wrapper", "bin-hello")
+        runner.withArguments("--configuration-cache", "wrapper", "bin-hello", "clean")
         runner.withProjectDir(projectDir)
         val result = runner.build()
         println("$projectDir")
         println("")
-        val localCopy = File("../demo/simplest").absoluteFile
+        val localRepo = File("../local-plugin-repository").absolutePath
+        settingsFile.writeText("""
+            pluginManagement {
+                repositories {
+                    maven { url '$localRepo' }
+                    mavenCentral()
+                    gradlePluginPortal()
+                }
+            }
+        """.trimIndent())
+        val localCopy = File("../demo/simplest").absoluteFile.canonicalFile
+        println("Publishing to $localCopy")
         localCopy.deleteRecursively()
         localCopy.mkdirs()
         projectDir.copyRecursively(localCopy)
+        localCopy.resolve("bin").deleteRecursively()
+        localCopy.resolve("obj").deleteRecursively()
     }
 }
