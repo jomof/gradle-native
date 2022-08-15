@@ -59,8 +59,8 @@ testing {
 gradlePlugin {
     // Define the plugin
     val greeting by plugins.creating {
-        id = "com.jomof.gradlenative.greeting"
-        implementationClass = "com.jomof.gradlenative.NativePlugin"
+        id = "com.jomof.cxx.core"
+        implementationClass = "com.jomof.cxx.NativePlugin"
     }
 }
 
