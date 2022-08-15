@@ -1,0 +1,6 @@
+pluginManagement {
+    repositories {
+        maven { url '/Users/jomof/projects/native/plugin/../local-plugin-repository' }
+        mavenCentral()
+    }
+}

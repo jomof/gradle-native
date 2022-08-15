@@ -25,7 +25,7 @@ class NativePluginFunctionalTest {
         getSettingsFile().writeText("")
         getBuildFile().writeText("""
         plugins {
-            id('com.jomof.cxx.core')
+            id('com.github.jomof.cxx.core')
         }
         cxx {
             var compile = rule {

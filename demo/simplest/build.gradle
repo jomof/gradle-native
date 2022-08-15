@@ -1,0 +1,22 @@
+plugins {
+    id('com.github.jomof.cxx.core') version '0.0.1'
+}
+cxx {
+    var compile = rule {
+        description = "Building $out"
+        command = "clang $cflags -c $in -o$out"
+    }
+    var link = rule {
+        description = "Linking $out"
+        command = "clang $in -o$out"
+     }
+    compile {
+        in = "hello.c"
+        out = "obj/hello.o"
+        cflags = "-Weverything"
+    }
+    link {
+        in = "obj/hello.o"
+        out = "bin/hello"
+    }
+}

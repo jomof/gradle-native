@@ -13,6 +13,9 @@ plugins {
 
     // Apply the Kotlin JVM plugin to add support for Kotlin.
     id("org.jetbrains.kotlin.jvm") version "1.6.21"
+
+    id("maven-publish")
+    id("com.gradle.plugin-publish") version "1.0.0"
 }
 
 repositories {
@@ -56,10 +59,13 @@ testing {
     }
 }
 
+group = "com.github.jomof"
+version = "0.0.1"
+
 gradlePlugin {
     // Define the plugin
     val greeting by plugins.creating {
-        id = "com.jomof.cxx.core"
+        id = "com.github.jomof.cxx.core"
         implementationClass = "com.jomof.cxx.NativePlugin"
     }
 }
@@ -69,4 +75,19 @@ gradlePlugin.testSourceSets(sourceSets["functionalTest"])
 tasks.named<Task>("check") {
     // Include functionalTest as part of the check lifecycle
     dependsOn(testing.suites.named("functionalTest"))
+}
+
+pluginBundle {
+    website = "<substitute your project website>"
+    vcsUrl = "<uri to project source repository>"
+    tags = listOf("tags", "for", "your", "plugins")
+}
+
+publishing {
+    repositories {
+        maven {
+            name = "localPluginRepository"
+            url = uri("../local-plugin-repository")
+        }
+    }
 }
