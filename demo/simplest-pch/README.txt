@@ -1,0 +1,1 @@
+This project demonstrates creating and using a precompiled header file.

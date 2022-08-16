@@ -16,17 +16,20 @@ cxx {
         command = "clang $in -o $out"
      }
     for (configuration in configurations) {
-        for(int i = 0; i<5; i++) {
-            var variant = "${configuration.name}$i"
-            compile {
-                in = "hello.c"
-                out = "obj/$variant/hello.o"
-                cflags = "-Weverything"
+        var variant = "${configuration.name}"
+        
+        compile {
+            in = "hello.c"
+            out = "obj/$variant/hello.o"
+            if (variant == "release") {
+                cflags = "-DRELEASE"
+            } else {
+                cflags = "-DDEBUG"
             }
-            link {
-                in = "obj/$variant/hello.o"
-                out = "bin/$variant/hello"
-            }
+        }
+        link {
+            in = "obj/$variant/hello.o"
+            out = "bin/$variant/hello"
         }
     }
 }

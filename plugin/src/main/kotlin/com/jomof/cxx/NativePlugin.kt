@@ -124,9 +124,8 @@ fun calculateNativeDependencies(project: Project, ruleScope: RuleScope, buffer :
         }
 
         if (depfile.isOutOfDateWithRespectTo(inputs)) {
-            if (!tokenList.any { it.contains(depfile.name)}) {
-                error("Command didn't create declared depfile '$depfile':\n${tokenList.joinToString("\n    ")}")
-            }
+           // error("Command didn't create declared depfile '$depfile':\n${tokenList.joinToString("\n    ")}")
+            return listOf();
         }
     }
 

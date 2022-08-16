@@ -7,9 +7,8 @@ import kotlin.test.Test
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
-class SimplestProjectTest {
+class SharedLibraryTest {
     @get:Rule val tempFolder = TemporaryFolder()
 
     private val projectDir by lazy { tempFolder.root }
@@ -17,17 +16,24 @@ class SimplestProjectTest {
     private val settingsFile by lazy { projectDir.resolve("settings.gradle") }
 
     @Test fun `can run task`() {
-        projectDir.resolve("obj/hello.o.d").delete()
-        projectDir.resolve("hello.h").writeText("""
-            #define MESSAGE "Hello, World!\n"
+        projectDir.resolve("lib").mkdirs()
+        projectDir.resolve("app").mkdirs()
+        projectDir.resolve("lib/message.h").writeText("""
+            const char * message();
             
         """.trimIndent())
-        projectDir.resolve("hello.c").writeText("""
+        projectDir.resolve("lib/message.c").writeText("""
+            const char * message() {
+                return "Hello, World!\n";
+            }
+            
+        """.trimIndent())
+        projectDir.resolve("app/hello.c").writeText("""
             #include <stdio.h>
-            #include "hello.h"
+            #include "message.h"
             
             int main() {
-               printf(MESSAGE);
+               printf("%s", message());
                return 0;
             }
             
@@ -38,26 +44,34 @@ class SimplestProjectTest {
                 id('com.github.jomof.cxx.core') version '0.0.1'
             }
             cxx {
-                // Create a rule for compiling a .c file into a .o file
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
                     command = "clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
-                // Create a rule for linking .o file into executable
-                var link = rule {
-                    description = "Linking ${'$'}out"
+                var linkShared = rule {
+                    description = "Linking Shared Library ${'$'}out"
+                    command = "clang ${'$'}in -o ${'$'}out -shared"
+                }
+                var linkExe = rule {
+                    description = "Linking Executable ${'$'}out"
                     command = "clang ${'$'}in -o ${'$'}out"
-                }
-                // Compile hello.c into obj/hello.o
+                 }
                 compile {
-                    in = "hello.c"
+                    in = "app/hello.c"
                     out = "obj/hello.o"
-                    cflags = "-Weverything"
+                    cflags = "-Ilib"
                 }
-                // Link obj/hello.o into bin/hello executable
-                link {
-                    in = "obj/hello.o"
+                compile {
+                    in = "lib/message.c"
+                    out = "obj/message.o"
+                }
+                linkShared {
+                    in = "obj/message.o"
+                    out = "bin/message.so"
+                }
+                linkExe {
+                    in = ["obj/hello.o", "bin/message.so"]
                     out = "bin/hello"
                 }
             }
@@ -70,10 +84,11 @@ class SimplestProjectTest {
         runner.withArguments("--configuration-cache", "wrapper", "bin-hello", "clean")
         runner.withProjectDir(projectDir)
         val result = runner.build()
-        publishDemo(projectDir, "simplest",
-            """
-                This project demonstrates the simplest possible C/C++ build. It expects
-                'clang' to be on the path.
-            """.trimIndent())
-        }
+        publishDemo(projectDir, "shared-library",
+        """
+            This project demonstrates how to build an executable that depends on a shared
+            library within the same Gradle module.
+        """.trimIndent())
+
+    }
 }

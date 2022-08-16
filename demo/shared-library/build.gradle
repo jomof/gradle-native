@@ -1,0 +1,35 @@
+plugins {
+    id('com.github.jomof.cxx.core') version '0.0.1'
+}
+cxx {
+    var compile = rule {
+        description = "Building $out"
+        depfile = "${out}.d"
+        command = "clang $cflags -c $in -o $out -MD -MF $depfile"
+    }
+    var linkShared = rule {
+        description = "Linking Shared Library $out"
+        command = "clang $in -o $out -shared"
+    }
+    var linkExe = rule {
+        description = "Linking Executable $out"
+        command = "clang $in -o $out"
+     }
+    compile {
+        in = "app/hello.c"
+        out = "obj/hello.o"
+        cflags = "-Ilib"
+    }
+    compile {
+        in = "lib/message.c"
+        out = "obj/message.o"
+    }
+    linkShared {
+        in = "obj/message.o"
+        out = "bin/message.so"
+    }
+    linkExe {
+        in = ["obj/hello.o", "bin/message.so"]
+        out = "bin/hello"
+    }
+}

@@ -7,9 +7,8 @@ import kotlin.test.Test
 import org.gradle.testkit.runner.GradleRunner
 import org.junit.Rule
 import org.junit.rules.TemporaryFolder
-import java.io.File
 
-class SimplestPrecompiledHeaderProjectTest {
+class SimplestVariantsTest {
     @get:Rule val tempFolder = TemporaryFolder()
 
     private val projectDir by lazy { tempFolder.root }
@@ -19,16 +18,16 @@ class SimplestPrecompiledHeaderProjectTest {
     @Test fun `can run task`() {
         projectDir.resolve("obj/hello.o.d").delete()
         projectDir.resolve("hello.h").writeText("""
-            #define MESSAGE "Hello, World!\n"
-            
-        """.trimIndent())
-        projectDir.resolve("common.h").writeText("""
-            #include <stdio.h>
-            #include "hello.h"
+            #if DEBUG
+                #define MESSAGE "Hello, World! (DEBUG)\n"
+            #else
+                #define MESSAGE "Hello, World! (RELEASE)\n"
+            #endif
             
         """.trimIndent())
         projectDir.resolve("hello.c").writeText("""
-            #include "common.h"
+            #include <stdio.h>
+            #include "hello.h"
             
             int main() {
                printf(MESSAGE);
@@ -41,49 +40,51 @@ class SimplestPrecompiledHeaderProjectTest {
             plugins {
                 id('com.github.jomof.cxx.core') version '0.0.1'
             }
+            configurations {
+                debug { }
+                release { }
+            }
             cxx {
-                var pch = rule {
-                    description = "Building PCH ${'$'}out"
-                    depfile = "${'$'}{out}.d"
-                    command = "clang -x c-header ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
-                }
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
-                    command = "clang -include-pch ${'$'}pch ${'$'}cflags -c ${'$'}source -o ${'$'}out -MD -MF ${'$'}depfile"
+                    command = "clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
                 var link = rule {
                     description = "Linking ${'$'}out"
-                    command = "clang ${'$'}pch ${'$'}in -o ${'$'}out"
-                }
-                var common = pch {
-                    in = "common.h"
-                    out = "obj/common.h.pch"
-                }
-                var hello = compile {
-                    source = "hello.c"
-                    pch = common.out
-                    in = [ source, pch ]
-                    out = "obj/hello.o"
-                    cflags = "-Weverything"
-                }
-                link {
-                    in = hello.out
-                    out = "bin/hello"
+                    command = "clang ${'$'}in -o ${'$'}out"
+                 }
+                for (configuration in configurations) {
+                    var variant = "${'$'}{configuration.name}"
+                    
+                    compile {
+                        in = "hello.c"
+                        out = "obj/${'$'}variant/hello.o"
+                        if (variant == "release") {
+                            cflags = "-DRELEASE"
+                        } else {
+                            cflags = "-DDEBUG"
+                        }
+                    }
+                    link {
+                        in = "obj/${'$'}variant/hello.o"
+                        out = "bin/${'$'}variant/hello"
+                    }
                 }
             }
             """.trimIndent())
 
-        // Run the build"
+        // Run the build
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("--configuration-cache", "wrapper", "bin-hello", "clean")
+        runner.withArguments("--configuration-cache", "wrapper", "assemble", "clean")
         runner.withProjectDir(projectDir)
         val result = runner.build()
-        publishDemo(projectDir, "simplest-pch",
+        publishDemo(projectDir, "simplest-variants",
             """
-                This project demonstrates creating and using a precompiled header file.
+                This project demonstrates a project that can build either debug or
+                release versions of an executable.
             """.trimIndent())
     }
 }

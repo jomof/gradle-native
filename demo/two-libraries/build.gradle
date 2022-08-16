@@ -2,24 +2,20 @@ plugins {
     id('com.github.jomof.cxx.core') version '0.0.1'
 }
 cxx {
-    // Create a rule for compiling a .c file into a .o file
     var compile = rule {
         description = "Building $out"
         depfile = "${out}.d"
         command = "clang $cflags -c $in -o $out -MD -MF $depfile"
     }
-    // Create a rule for linking .o file into executable
     var link = rule {
         description = "Linking $out"
         command = "clang $in -o $out"
-    }
-    // Compile hello.c into obj/hello.o
+     }
     compile {
         in = "hello.c"
         out = "obj/hello.o"
         cflags = "-Weverything"
     }
-    // Link obj/hello.o into bin/hello executable
     link {
         in = "obj/hello.o"
         out = "bin/hello"

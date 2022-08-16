@@ -1,6 +1,6 @@
 pluginManagement {
     repositories {
-        maven { url '../../local-plugin-repository' }
+        maven { url '/Users/jomof/projects/native/plugin/../local-plugin-repository' }
         mavenCentral()
         gradlePluginPortal()
     }
