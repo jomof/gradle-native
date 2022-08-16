@@ -12,6 +12,12 @@ fun publishDemo(projectDir : File, demoName : String, readme : String) {
     val settingsFile = projectDir.resolve("settings.gradle")
     val readmeFile = projectDir.resolve("README.txt")
     readmeFile.writeText(readme)
+    val gitignoreFile = projectDir.resolve(".gitignore")
+    gitignoreFile.writeText("""
+        obj/
+        bin/
+    """.trimIndent())
+    readmeFile.writeText(readme)
     val localRepo = File("../../local-plugin-repository")
     settingsFile.writeText("""
             pluginManagement {
