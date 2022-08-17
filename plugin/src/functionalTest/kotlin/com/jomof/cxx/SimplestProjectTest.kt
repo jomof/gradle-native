@@ -42,12 +42,12 @@ class SimplestProjectTest {
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
-                    command = "clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
+                    command = "/usr/bin/clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
                 // Create a rule for linking .o file into executable
                 var link = rule {
                     description = "Linking ${'$'}out"
-                    command = "clang ${'$'}in -o ${'$'}out"
+                    command = "/usr/bin/clang ${'$'}in -o ${'$'}out"
                 }
                 // Compile hello.c into obj/hello.o
                 compile {
@@ -61,6 +61,7 @@ class SimplestProjectTest {
                     out = "bin/hello"
                 }
             }
+
             """.trimIndent())
 
         // Run the build

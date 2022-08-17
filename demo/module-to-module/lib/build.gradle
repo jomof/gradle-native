@@ -1,0 +1,38 @@
+plugins {
+    id('com.github.jomof.cxx.core')
+}
+cxx {
+    var compile = rule {
+        description = "Building $out"
+        depfile = "${out}.d"
+        command = "/usr/bin/clang $cflags -c $in -o $out -MD -MF $depfile"
+    }
+    var linkShared = rule {
+        description = "Linking Shared Library $out"
+        command = "/usr/bin/clang $in -o $out -shared"
+    }
+    compile {
+        in = "message.c"
+        out = "obj/message.o"
+    }
+    linkShared {
+        in = "obj/message.o"
+        out = "bin/message.so"
+    }
+}
+configurations {
+    nativeLibrary {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+    nativeHeader {
+        canBeConsumed = true
+        canBeResolved = false
+    }
+}
+artifacts {
+    nativeLibrary(file("bin/message.so")) {
+        builtBy("bin-message.so")
+    }
+    nativeHeader(file("."))
+}

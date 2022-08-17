@@ -47,15 +47,19 @@ class SharedLibraryTest {
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
-                    command = "clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
+                    command = [
+                        "/usr/bin/clang", cflags,
+                        "-c", in,
+                        "-o", out,
+                        "-MD -MF", depfile ]
                 }
                 var linkShared = rule {
                     description = "Linking Shared Library ${'$'}out"
-                    command = "clang ${'$'}in -o ${'$'}out -shared"
+                    command = "/usr/bin/clang ${'$'}in -o ${'$'}out -shared"
                 }
                 var linkExe = rule {
                     description = "Linking Executable ${'$'}out"
-                    command = "clang ${'$'}in -o ${'$'}out"
+                    command = "/usr/bin/clang ${'$'}in -o ${'$'}out"
                  }
                 compile {
                     in = "app/hello.c"
@@ -63,7 +67,7 @@ class SharedLibraryTest {
                     cflags = "-Ilib"
                 }
                 compile {
-                    in = "lib/message.c"
+                    in = "lib/message.c" 
                     out = "obj/message.o"
                 }
                 linkShared {
@@ -81,7 +85,7 @@ class SharedLibraryTest {
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("--configuration-cache", "wrapper", "bin-hello", "clean")
+        runner.withArguments("--stacktrace", "--configuration-cache", "wrapper", "bin-hello", "clean")
         runner.withProjectDir(projectDir)
         val result = runner.build()
         publishDemo(projectDir, "shared-library",

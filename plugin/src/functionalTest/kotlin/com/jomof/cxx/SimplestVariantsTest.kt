@@ -48,11 +48,11 @@ class SimplestVariantsTest {
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
-                    command = "clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
+                    command = "/usr/bin/clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
                 var link = rule {
                     description = "Linking ${'$'}out"
-                    command = "clang ${'$'}in -o ${'$'}out"
+                    command = "/usr/bin/clang ${'$'}in -o ${'$'}out"
                  }
                 for (configuration in configurations) {
                     var variant = "${'$'}{configuration.name}"

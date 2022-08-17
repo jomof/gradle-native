@@ -1,0 +1,40 @@
+plugins {
+    id('com.github.jomof.cxx.core')
+}
+
+configurations {
+    importNativeLibrary {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+    importNativeHeader {
+        canBeConsumed = false
+        canBeResolved = true
+    }
+}
+
+cxx {
+    var compile = rule {
+        description = "Building $out"
+        depfile = "${out}.d"
+        command = "clang $cflags -c $in -o $out -MD -MF $depfile"
+    }
+    var linkExe = rule {
+        description = "Linking Executable $out"
+        command = "clang $in -o $out"
+    }
+    compile {
+        in = "hello.c"
+        out = "obj/hello.o"
+        cflags = configurations.importNativeHeader.files.collect { "-I$it" }
+    }
+    linkExe {
+        in = [ "obj/hello.o" ] + configurations.importNativeLibrary
+        out = "bin/hello"
+    }
+}
+
+dependencies {
+    importNativeLibrary(project(path: ":lib", configuration: 'nativeLibrary'))
+    importNativeHeader(project(path: ":lib", configuration: 'nativeHeader'))
+}

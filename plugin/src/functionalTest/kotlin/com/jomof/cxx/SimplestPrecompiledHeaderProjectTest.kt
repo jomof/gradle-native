@@ -45,16 +45,16 @@ class SimplestPrecompiledHeaderProjectTest {
                 var pch = rule {
                     description = "Building PCH ${'$'}out"
                     depfile = "${'$'}{out}.d"
-                    command = "clang -x c-header ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
+                    command = "/usr/bin/clang -x c-header ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
-                    command = "clang -include-pch ${'$'}pch ${'$'}cflags -c ${'$'}source -o ${'$'}out -MD -MF ${'$'}depfile"
+                    command = "/usr/bin/clang -include-pch ${'$'}pch ${'$'}cflags -c ${'$'}source -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
                 var link = rule {
                     description = "Linking ${'$'}out"
-                    command = "clang ${'$'}pch ${'$'}in -o ${'$'}out"
+                    command = "/usr/bin/clang ${'$'}pch ${'$'}in -o ${'$'}out"
                 }
                 var common = pch {
                     in = "common.h"
@@ -78,7 +78,7 @@ class SimplestPrecompiledHeaderProjectTest {
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("--configuration-cache", "wrapper", "bin-hello", "clean")
+        runner.withArguments("--stacktrace", "--configuration-cache", "wrapper", "bin-hello", "clean")
         runner.withProjectDir(projectDir)
         val result = runner.build()
         publishDemo(projectDir, "simplest-pch",

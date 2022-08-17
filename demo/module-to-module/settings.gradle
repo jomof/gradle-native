@@ -1,0 +1,9 @@
+pluginManagement {
+    repositories {
+        maven { url '../../local-plugin-repository' }
+        mavenCentral()
+        gradlePluginPortal()
+    }
+}
+include ':lib'
+include ':app'

@@ -5,22 +5,32 @@ package com.jomof.cxx
 
 import org.gradle.api.Project
 import org.gradle.api.Plugin
+import org.gradle.api.artifacts.Configuration
 import java.io.File
 import java.io.OutputStream
-import java.nio.IntBuffer
 
 /**
  * A simple 'hello world' plugin.
  */
 class NativePlugin: Plugin<Project> {
     override fun apply(project: Project) {
-        val cxx = project.extensions.create("cxx", NativePluginExtension::class.java)
+        val cxx = project.extensions.create("cxx", NativePluginExtension::class.java, project)
 
         project.afterEvaluate {
-            val outputs = mutableMapOf<String, String>()
+            // Key is output, value is task name or something we can depend on
+            val outputs = mutableMapOf<String, Any>()
             val cleanFiles = mutableListOf<File>()
 
-            cxx.buildRules.forEach { (taskName, ruleScope) ->
+            project.configurations.forEach { configuration : Configuration ->
+                if (configuration.isCanBeResolved) {
+                    for (file in configuration.resolve()) {
+                        outputs[file.path] = configuration
+                    }
+                }
+            }
+            val buildCommands = cxx.buildCommands.associateBy { taskNameOfOutput(it.output) }
+
+            buildCommands.forEach { (taskName, ruleScope) ->
                 if (outputs.containsKey(ruleScope.output)) {
                     error("Output ${ruleScope.output} is already produced by ${outputs.getValue(ruleScope.output)}")
                 }
@@ -28,38 +38,26 @@ class NativePlugin: Plugin<Project> {
                 cleanFiles.add(File(ruleScope.output))
             }
 
-            var buffer = intArrayOf()
-
-
-
-            cxx.buildRules.forEach { (taskName, ruleScope) ->
+            buildCommands.forEach { (taskName, buildCommand) ->
                 project.tasks.register(
                     taskName,
                     BuildTask::class.java
                 ) { task ->
 
-                    task.description = ruleScope.description
-                    if (buffer.size < minimumSizeOfTokenizeCommandLineBuffer(ruleScope.command)) {
-                        buffer = allocateTokenizeCommandLineBuffer(ruleScope.command)
-                    }
+                    task.description = buildCommand.description
 
-                    val nativeDependencies = calculateNativeDependencies(project, ruleScope, buffer)
+                    val nativeDependencies = calculateNativeDependencies(project, buildCommand)
 
-                    val tokens = TokenizedCommandLine(
-                        commandLine = ruleScope.command,
-                        raw = true,
-                        indexes = buffer
-                    )
                     task.parameters.set(
                         BuildCommandParameters(
-                            description = ruleScope.description,
-                            inputs = project.files(ruleScope.inputs),
+                            description = buildCommand.description,
+                            inputs = project.files(buildCommand.inputs),
                             dependencies = nativeDependencies,
-                            output = project.file(ruleScope.output),
-                            command = tokens.toTokenList()
+                            output = project.file(buildCommand.output),
+                            command = buildCommand.command
                         )
                     )
-                    ruleScope.inputs.forEach { input ->
+                    buildCommand.inputs.forEach { input ->
                         val producer = outputs[input]
                         if (producer != null) {
                             task.dependsOn(producer)
@@ -69,17 +67,15 @@ class NativePlugin: Plugin<Project> {
                             }
                         }
                     }
-
                 }
-
             }
 
             val projectDir = project.projectDir
             project.task("clean").doFirst {
-                cleanFiles.forEach {
-                    val file = projectDir.resolve(it)
+                cleanFiles.forEach { cleanFile ->
+                    val file = projectDir.resolve(cleanFile)
                     if (file.isFile) {
-                        println("Cleaning $it")
+                        println("Cleaning $cleanFile")
                         file.delete()
                     }
                 }
@@ -92,29 +88,28 @@ class NativePlugin: Plugin<Project> {
     }
 }
 
-fun calculateNativeDependencies(project: Project, ruleScope: RuleScope, buffer : IntArray) : List<File> {
-    if (ruleScope.depfile.isNullOrEmpty()) return listOf()
+fun taskNameOfOutput(output : String) = output
+    .replace('\\', '-')
+    .replace('/', '-')
+
+fun calculateNativeDependencies(project: Project, buildCommand: BuildCommand) : List<File> {
+    if (buildCommand.depfile.isNullOrEmpty()) return listOf()
     // Not a clang compile
-    val depfile = project.projectDir.resolve(ruleScope.depfile!!)
+    val depfile = project.projectDir.resolve(buildCommand.depfile)
 
 
-    val inputs = ruleScope.inputs.map { File(it) }
+    val inputs = buildCommand.inputs.map { File(it) }
     if (depfile.isOutOfDateWithRespectTo(inputs)) {
-        val tokens = TokenizedCommandLine(
-            commandLine = ruleScope.command,
-            raw = true,
-            indexes = buffer
-        )
-        tokens.removeTokenGroup("-include-pch", 1)
-        val tokenList = tokens.toTokenList()
+        val tokenList = buildCommand.command.removeMatchingElementAndNext("-include-pch", 1)
 
-        // Check whether its possible a depfile will actually be created
+        // Check whether it's possible a depfile will actually be created
         if (!tokenList.any { it.contains(depfile.name)}) {
             error("Command won't create declared depfile '$depfile':\n${tokenList.joinToString("\n    ")}")
         }
         depfile.parentFile.mkdirs()
 
         // Run the command with -E flag to execute only preprocessor
+        //println(tokenList.joinToString("\n  "))
         project.exec {
             it.commandLine = tokenList + listOf("-E")
             it.workingDir = project.projectDir.absoluteFile
@@ -125,7 +120,7 @@ fun calculateNativeDependencies(project: Project, ruleScope: RuleScope, buffer :
 
         if (depfile.isOutOfDateWithRespectTo(inputs)) {
            // error("Command didn't create declared depfile '$depfile':\n${tokenList.joinToString("\n    ")}")
-            return listOf();
+            return listOf()
         }
     }
 
