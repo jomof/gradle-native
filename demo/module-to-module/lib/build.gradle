@@ -1,6 +1,12 @@
 plugins {
     id('com.github.jomof.cxx.core')
 }
+def usage = Attribute.of('usage', String)
+configurations {
+    compile {
+        attributes { attribute(usage, 'api') }
+    }
+}
 cxx {
     var compile = rule {
         description = "Building $out"
@@ -21,18 +27,21 @@ cxx {
     }
 }
 configurations {
-    nativeLibrary {
-        canBeConsumed = true
-        canBeResolved = false
+    compile {
+        outgoing {
+            variants {
+                includeVariant {
+                    artifact(file(".")) {
+                      type "include"
+                    }
+                }
+                libraryVariant {
+                    artifact(file("bin/message.so")) {
+                        builtBy("bin-message.so")
+                        type "library"
+                    }
+                }
+            }
+        }
     }
-    nativeHeader {
-        canBeConsumed = true
-        canBeResolved = false
-    }
-}
-artifacts {
-    nativeLibrary(file("bin/message.so")) {
-        builtBy("bin-message.so")
-    }
-    nativeHeader(file("."))
 }

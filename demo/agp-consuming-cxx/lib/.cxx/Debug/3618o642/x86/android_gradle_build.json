@@ -1,0 +1,38 @@
+{
+  "buildFiles": [
+    "/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/src/main/cpp/CMakeLists.txt"
+  ],
+  "cleanCommandsComponents": [
+    [
+      "/Users/jomof/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+      "-C",
+      "/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/.cxx/Debug/3618o642/x86",
+      "clean"
+    ]
+  ],
+  "buildTargetsCommandComponents": [
+    "/Users/jomof/Library/Android/sdk/cmake/3.22.1/bin/ninja",
+    "-C",
+    "/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/.cxx/Debug/3618o642/x86",
+    "{LIST_OF_TARGETS_TO_BUILD}"
+  ],
+  "libraries": {
+    "foo::@6890427a1f51a3e7e1df": {
+      "toolchain": "toolchain",
+      "abi": "x86",
+      "artifactName": "foo",
+      "output": "/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/build/intermediates/cxx/Debug/3618o642/obj/x86/libfoo.so",
+      "runtimeFiles": []
+    }
+  },
+  "toolchains": {
+    "toolchain": {
+      "cCompilerExecutable": "/Users/jomof/Library/Android/sdk/ndk/23.1.7779620/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang.lld",
+      "cppCompilerExecutable": "/Users/jomof/Library/Android/sdk/ndk/23.1.7779620/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang++.lld"
+    }
+  },
+  "cFileExtensions": [
+    "c"
+  ],
+  "cppFileExtensions": []
+}

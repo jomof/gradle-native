@@ -44,8 +44,8 @@ class ModuleToModuleTest {
             
         """.trimIndent())
         settingsFile.writeText("""
-            include ':lib'
             include ':app'
+            include ':lib'
         """.trimIndent())
         buildFile.writeText("""
             plugins {
@@ -57,24 +57,29 @@ class ModuleToModuleTest {
             plugins {
                 id('com.github.jomof.cxx.core')
             }
+            def usage = Attribute.of('usage', String)
+            configurations {
+                compile {
+                    attributes { attribute(usage, 'api') }
+                }
+            }
             
             configurations {
-                importNativeLibrary {
-                    canBeConsumed = false
-                    canBeResolved = true
-                }
-                importNativeHeader {
-                    canBeConsumed = false
-                    canBeResolved = true
+                debug {
+//                    canBeConsumed = false
+//                    canBeResolved = true
                 }
             }
             
             cxx {
+                var includes = importByAttribute("include")
+                var libraries = importByAttribute("library")
                 var compile = rule {
                     description = "Building ${'$'}out"
                     depfile = "${'$'}{out}.d"
                     command = "/usr/bin/clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
+                
                 var linkExe = rule {
                     description = "Linking Executable ${'$'}out"
                     command = "/usr/bin/clang ${'$'}in -o ${'$'}out"
@@ -82,24 +87,28 @@ class ModuleToModuleTest {
                 compile {
                     in = "hello.c"
                     out = "obj/hello.o"
-                    cflags = configurations.importNativeHeader.files.collect { "-I${'$'}it" }
+                    cflags = includes.expandFlag("-I")
                 }
                 linkExe {
-                    in = [ "obj/hello.o" ] + configurations.importNativeLibrary
+                    in = [ "obj/hello.o" ] + libraries
                     out = "bin/hello"
                 }
             }
             
             dependencies {
-                importNativeLibrary(project(path: ":lib", configuration: 'nativeLibrary'))
-                importNativeHeader(project(path: ":lib", configuration: 'nativeHeader'))
+                compile project(":lib")
             }
-
             """.trimIndent())
 
         libBuildFile.writeText("""
             plugins {
                 id('com.github.jomof.cxx.core')
+            }
+            def usage = Attribute.of('usage', String)
+            configurations {
+                compile {
+                    attributes { attribute(usage, 'api') }
+                }
             }
             cxx {
                 var compile = rule {
@@ -121,28 +130,34 @@ class ModuleToModuleTest {
                 }
             }
             configurations {
-                nativeLibrary {
-                    canBeConsumed = true
-                    canBeResolved = false
+                compile {
+                    outgoing {
+                        variants {
+                            includeVariant {
+                                artifact(file(".")) {
+                                  type "include"
+                                }
+                            }
+                            libraryVariant {
+                                artifact(file("bin/message.so")) {
+                                    builtBy("bin-message.so")
+                                    type "library"
+                                }
+                            }
+                        }
+                    }
                 }
-                nativeHeader {
-                    canBeConsumed = true
-                    canBeResolved = false
-                }
-            }
-            artifacts {
-                nativeLibrary(file("bin/message.so")) {
-                    builtBy("bin-message.so")
-                }
-                nativeHeader(file("."))
             }
             """.trimIndent())
 
         // Run the build
         val runner = GradleRunner.create()
+
         runner.forwardOutput()
+        runner.withDebug(true)
         runner.withPluginClasspath()
-        runner.withArguments("--configuration-cache", "wrapper", "assemble", "clean")
+        runner.withArguments("--stacktrace", "--configuration-cache", "wrapper", "assemble", "clean")
+        //runner.withArguments("--stacktrace", "--configuration-cache", "lib:outgoingVariants")
         runner.withProjectDir(projectDir)
         val result = runner.build()
         publishDemo(projectDir, "module-to-module",

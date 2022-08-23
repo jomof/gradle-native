@@ -3,11 +3,27 @@
  */
 package com.jomof.cxx
 
+import com.android.build.gradle.internal.publishing.AndroidArtifacts
+import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Plugin
+import org.gradle.api.artifacts.ArtifactView
 import org.gradle.api.artifacts.Configuration
+import org.gradle.api.attributes.AttributeContainer
+import org.gradle.api.file.ConfigurableFileCollection
 import java.io.File
 import java.io.OutputStream
+import java.util.concurrent.Callable
+
+fun Project.assertProjectConfigurationsNotResolved(message : () -> String = { "" }) {
+    configurations.forEach { configuration: Configuration ->
+        if (configuration.isCanBeResolved) {
+            if (configuration.state == Configuration.State.RESOLVED) {
+              error("$configuration was resolved ${message()}")
+            }
+        }
+    }
+}
 
 /**
  * A simple 'hello world' plugin.
@@ -15,54 +31,92 @@ import java.io.OutputStream
 class NativePlugin: Plugin<Project> {
     override fun apply(project: Project) {
         val cxx = project.extensions.create("cxx", NativePluginExtension::class.java, project)
+        project.assertProjectConfigurationsNotResolved()
 
         project.afterEvaluate {
             // Key is output, value is task name or something we can depend on
             val outputs = mutableMapOf<String, Any>()
             val cleanFiles = mutableListOf<File>()
+            project.assertProjectConfigurationsNotResolved()
+
+            val typedFiles = mutableMapOf<String, ConfigurableFileCollection>()
+
 
             project.configurations.forEach { configuration : Configuration ->
                 if (configuration.isCanBeResolved) {
-                    for (file in configuration.resolve()) {
-                        outputs[file.path] = configuration
+                    for (artifactType in listOf("include", "library")) {
+                        val files = typedFiles.computeIfAbsent(artifactType) { project.objects.fileCollection() }
+
+                        val attributesAction =
+                            Action { container: AttributeContainer ->
+                                container.attribute(AndroidArtifacts.ARTIFACT_TYPE, artifactType)
+                            }
+
+                        files.from(configuration.incoming.artifactView { config: ArtifactView.ViewConfiguration ->
+                            config.attributes(attributesAction)
+                        }.files)
+//                        for (include in includes) {
+//                            println("----${include}")
+//                        }
+//                    val resolved = configuration.resolvedConfiguration
+//                    println("xxxxx[$resolved")
                     }
                 }
             }
-            val buildCommands = cxx.buildCommands.associateBy { taskNameOfOutput(it.output) }
 
-            buildCommands.forEach { (taskName, ruleScope) ->
-                if (outputs.containsKey(ruleScope.output)) {
-                    error("Output ${ruleScope.output} is already produced by ${outputs.getValue(ruleScope.output)}")
+            cxx.buildCommands.forEach { buildCommand ->
+                if (outputs.containsKey(buildCommand.output)) {
+                    error("Output ${buildCommand.output} is already produced by ${outputs.getValue(buildCommand.output)}")
                 }
-                outputs[ruleScope.output] = taskName
-                cleanFiles.add(File(ruleScope.output))
+                outputs[buildCommand.output] = taskNameOfOutput(buildCommand.output)
+                cleanFiles.add(File(buildCommand.output))
             }
 
-            buildCommands.forEach { (taskName, buildCommand) ->
+            project.assertProjectConfigurationsNotResolved()
+
+            cxx.buildCommands.forEach { buildCommand ->
+                val taskName = taskNameOfOutput(buildCommand.output)
                 project.tasks.register(
                     taskName,
                     BuildTask::class.java
                 ) { task ->
-
+                    project.assertProjectConfigurationsNotResolved()
                     task.description = buildCommand.description
 
-                    val nativeDependencies = calculateNativeDependencies(project, buildCommand)
+                    val sourceFiles = mutableListOf<SourceFiles>()
+
+                    buildCommand.namedEntities.forEach { (name, entity) ->
+
+                        when(entity) {
+                            is TaskTimeIterable -> {
+                                sourceFiles.add(SourceFiles(name, entity.getFileCollection(project), entity))
+                            }
+                            else -> error("Unsupported named entity type ${entity.javaClass}")
+                        }
+                       // configurationInputBuilders.add(it.value.buildable)
+                    }
 
                     task.parameters.set(
                         BuildCommandParameters(
                             description = buildCommand.description,
                             inputs = project.files(buildCommand.inputs),
-                            dependencies = nativeDependencies,
+                            dependencies = project.objects.fileCollection().from(object : Callable<List<File>> {
+                                override fun call(): List<File> = calculateNativeDependencies(project, buildCommand)
+                            }),
                             output = project.file(buildCommand.output),
-                            command = buildCommand.command
+                            command = buildCommand.command,
+                            sourceFiles = sourceFiles
                         )
                     )
+                    buildCommand.referencedConfigurations.forEach { task.dependsOn(it) }
+
                     buildCommand.inputs.forEach { input ->
                         val producer = outputs[input]
                         if (producer != null) {
                             task.dependsOn(producer)
                         } else {
-                            if (!project.file(input).isFile) {
+                            val uri = project.uri(input)
+                            if (uri.scheme == "file" && !File(uri).isFile) {
                                 error("Input $input did not exist")
                             }
                         }
@@ -71,7 +125,8 @@ class NativePlugin: Plugin<Project> {
             }
 
             val projectDir = project.projectDir
-            project.task("clean").doFirst {
+            val cleanTask = project.tasks.findByName("clean") ?: project.tasks.create("clean")
+            cleanTask.doFirst {
                 cleanFiles.forEach { cleanFile ->
                     val file = projectDir.resolve(cleanFile)
                     if (file.isFile) {
@@ -81,10 +136,11 @@ class NativePlugin: Plugin<Project> {
                 }
             }
 
-            project.tasks.register("assemble") {
-                it.dependsOn(project.tasks.withType(BuildTask::class.java))
-            }
+            val assembleTask = project.tasks.findByName("assemble") ?: project.tasks.create("assemble")
+            assembleTask.dependsOn(project.tasks.withType(BuildTask::class.java))
+            project.assertProjectConfigurationsNotResolved()
         }
+        project.assertProjectConfigurationsNotResolved()
     }
 }
 
@@ -100,7 +156,7 @@ fun calculateNativeDependencies(project: Project, buildCommand: BuildCommand) : 
 
     val inputs = buildCommand.inputs.map { File(it) }
     if (depfile.isOutOfDateWithRespectTo(inputs)) {
-        val tokenList = buildCommand.command.removeMatchingElementAndNext("-include-pch", 1)
+        val tokenList = buildCommand.command.removeMatchingElementAndNext("-include-pch", 1) + listOf("-E")
 
         // Check whether it's possible a depfile will actually be created
         if (!tokenList.any { it.contains(depfile.name)}) {
@@ -109,9 +165,8 @@ fun calculateNativeDependencies(project: Project, buildCommand: BuildCommand) : 
         depfile.parentFile.mkdirs()
 
         // Run the command with -E flag to execute only preprocessor
-        //println(tokenList.joinToString("\n  "))
         project.exec {
-            it.commandLine = tokenList + listOf("-E")
+            it.commandLine = tokenList
             it.workingDir = project.projectDir.absoluteFile
             it.standardOutput = OutputStream.nullOutputStream()
             it.errorOutput = OutputStream.nullOutputStream()
@@ -144,5 +199,6 @@ fun File.isOutOfDateWithRespectTo(files : List<File>) : Boolean {
     }
     return false
 }
+
 
 

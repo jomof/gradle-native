@@ -68,7 +68,7 @@ class SimplestProjectTest {
         val runner = GradleRunner.create()
         runner.forwardOutput()
         runner.withPluginClasspath()
-        runner.withArguments("--configuration-cache", "wrapper", "bin-hello", "clean")
+        runner.withArguments("--stacktrace", "--configuration-cache", "wrapper", "bin-hello", "clean")
         runner.withProjectDir(projectDir)
         val result = runner.build()
         publishDemo(projectDir, "simplest",

@@ -5,5 +5,5 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-include ':lib'
 include ':app'
+include ':lib'

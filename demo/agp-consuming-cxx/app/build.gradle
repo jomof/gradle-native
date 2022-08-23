@@ -1,0 +1,42 @@
+            plugins {
+                id 'com.android.library'
+                id('com.github.jomof.cxx.core')
+            }
+            android {
+                compileSdk 32
+            }
+            cxx {
+                var compile = rule {
+                    description = "Building $out"
+                    depfile = "${out}.d"
+                    command = "/usr/bin/clang $cflags -c $in -o $out -MD -MF $depfile"
+                }
+                var linkExe = rule {
+                    description = "Linking Executable $out"
+                    command = "/usr/bin/clang $in -o $out"
+                }
+                compile {
+                    in = "hello.c"
+                    out = "obj/hello.o"
+                    cflags = "-I../lib" 
+                }
+                linkExe {
+                    in = [ "obj/hello.o" ]
+                    out = "bin/hello"
+                }
+            }
+//            configurations {
+//                implementation {
+//                    canBeConsumed = false
+//                    canBeResolved = true
+//                    attributes {
+//                        attribute(com.android.build.api.attributes.AgpVersionAttr.ATTRIBUTE, 
+//                            objects.named(com.android.build.api.attributes.AgpVersionAttr, "7.4.0-alpha09"))   
+//                        attribute(com.android.build.api.attributes.BuildTypeAttr.ATTRIBUTE, 
+//                            objects.named(com.android.build.api.attributes.BuildTypeAttr, "release"))    
+//                    }
+//                }
+//            }
+            dependencies {
+                implementation project(":lib")
+            }

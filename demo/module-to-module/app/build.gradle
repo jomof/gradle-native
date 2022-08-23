@@ -1,40 +1,44 @@
-plugins {
-    id('com.github.jomof.cxx.core')
-}
-
-configurations {
-    importNativeLibrary {
-        canBeConsumed = false
-        canBeResolved = true
-    }
-    importNativeHeader {
-        canBeConsumed = false
-        canBeResolved = true
-    }
-}
-
-cxx {
-    var compile = rule {
-        description = "Building $out"
-        depfile = "${out}.d"
-        command = "/usr/bin/clang $cflags -c $in -o $out -MD -MF $depfile"
-    }
-    var linkExe = rule {
-        description = "Linking Executable $out"
-        command = "/usr/bin/clang $in -o $out"
-    }
-    compile {
-        in = "hello.c"
-        out = "obj/hello.o"
-        cflags = configurations.importNativeHeader.files.collect { "-I$it" }
-    }
-    linkExe {
-        in = [ "obj/hello.o" ] + configurations.importNativeLibrary
-        out = "bin/hello"
-    }
-}
-
-dependencies {
-    importNativeLibrary(project(path: ":lib", configuration: 'nativeLibrary'))
-    importNativeHeader(project(path: ":lib", configuration: 'nativeHeader'))
-}
+            plugins {
+                id('com.github.jomof.cxx.core')
+            }
+            def usage = Attribute.of('usage', String)
+            configurations {
+                compile {
+                    attributes { attribute(usage, 'api') }
+                }
+            }
+            
+            configurations {
+                debug {
+//                    canBeConsumed = false
+//                    canBeResolved = true
+                }
+            }
+            
+            cxx {
+                var includes = importByAttribute("include")
+                var libraries = importByAttribute("library")
+                var compile = rule {
+                    description = "Building $out"
+                    depfile = "${out}.d"
+                    command = "/usr/bin/clang $cflags -c $in -o $out -MD -MF $depfile"
+                }
+                
+                var linkExe = rule {
+                    description = "Linking Executable $out"
+                    command = "/usr/bin/clang $in -o $out"
+                }
+                compile {
+                    in = "hello.c"
+                    out = "obj/hello.o"
+                    cflags = includes.expandFlag("-I")
+                }
+                linkExe {
+                    in = [ "obj/hello.o" ] + libraries
+                    out = "bin/hello"
+                }
+            }
+            
+            dependencies {
+                compile project(":lib")
+            }

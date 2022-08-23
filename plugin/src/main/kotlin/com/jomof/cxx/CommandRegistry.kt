@@ -1,5 +1,7 @@
 package com.jomof.cxx
 
+import org.gradle.api.artifacts.Configuration
+
 
 class CommandRegistry {
     private var buffer = intArrayOf()
@@ -8,13 +10,16 @@ class CommandRegistry {
     fun all() = commands
 
     fun add(
-        description : Any,
-        inputs : Any,
-        output : Any,
-        command : Any,
-        depfile : Any?
+        description: Any,
+        inputs: Any,
+        output: Any,
+        command: Any,
+        depfile: Any?,
+        namedEntities: Map<String, Any>,
+        referencedConfigurations: List<Configuration>
     ) {
-        val commandLine = convertToSpaceSeparated(command)
+        val namedEntityRecorder = namedEntities.toMutableMap()
+        val commandLine = convertToSpaceSeparated(command, namedEntityRecorder)
         if (buffer.size < minimumSizeOfTokenizeCommandLineBuffer(commandLine)) {
             buffer = allocateTokenizeCommandLineBuffer(commandLine)
         }
@@ -25,9 +30,14 @@ class CommandRegistry {
             indexes = buffer
         )
 
+        val inputsList = convertToStringList(inputs, namedEntityRecorder)
+            .filter { !namedEntityRecorder.containsKey(it) }
+
         commands.add(BuildCommand(
             description = description.toString(),
-            inputs = convertToStringList(inputs),
+            namedEntities = namedEntityRecorder,
+            referencedConfigurations = referencedConfigurations,
+            inputs = inputsList,
             output = output.toString(),
             command = tokens.toTokenList(),
             depfile = depfile?.toString()
@@ -36,11 +46,14 @@ class CommandRegistry {
 }
 
 class BuildCommand(
-    val description : String,
-    val inputs : List<String>,
-    val output : String,
-    val command : List<String>,
-    val depfile : String?)
+    val description: String,
+    val namedEntities: Map<String, Any>,
+    val inputs: List<String>,
+    val output: String,
+    val command: List<String>,
+    val depfile: String?,
+    val referencedConfigurations: List<Configuration>
+)
 
 fun List<String>.removeMatchingElementAndNext(element : String, next : Int) : List<String> {
     if (!contains(element)) return this

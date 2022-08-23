@@ -1,0 +1,18 @@
+                        -H/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/src/main/cpp
+-DCMAKE_SYSTEM_NAME=Android
+-DCMAKE_EXPORT_COMPILE_COMMANDS=ON
+-DCMAKE_SYSTEM_VERSION=16
+-DANDROID_PLATFORM=android-16
+-DANDROID_ABI=x86_64
+-DCMAKE_ANDROID_ARCH_ABI=x86_64
+-DANDROID_NDK=/Users/jomof/Library/Android/sdk/ndk/23.1.7779620
+-DCMAKE_ANDROID_NDK=/Users/jomof/Library/Android/sdk/ndk/23.1.7779620
+-DCMAKE_TOOLCHAIN_FILE=/Users/jomof/Library/Android/sdk/ndk/23.1.7779620/build/cmake/android.toolchain.cmake
+-DCMAKE_MAKE_PROGRAM=/Users/jomof/Library/Android/sdk/cmake/3.22.1/bin/ninja
+-DCMAKE_LIBRARY_OUTPUT_DIRECTORY=/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/build/intermediates/cxx/RelWithDebInfo/5k3m21l5/obj/x86_64
+-DCMAKE_RUNTIME_OUTPUT_DIRECTORY=/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/build/intermediates/cxx/RelWithDebInfo/5k3m21l5/obj/x86_64
+-DCMAKE_BUILD_TYPE=RelWithDebInfo
+-B/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/.cxx/RelWithDebInfo/5k3m21l5/x86_64
+-GNinja
+                        Build command args: []
+                        Version: 2

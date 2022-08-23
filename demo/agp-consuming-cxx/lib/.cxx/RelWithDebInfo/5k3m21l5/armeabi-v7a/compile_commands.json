@@ -1,0 +1,7 @@
+[
+{
+  "directory": "/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/.cxx/RelWithDebInfo/5k3m21l5/armeabi-v7a",
+  "command": "/Users/jomof/Library/Android/sdk/ndk/23.1.7779620/toolchains/llvm/prebuilt/darwin-x86_64/bin/clang --target=armv7-none-linux-androideabi16 --sysroot=/Users/jomof/Library/Android/sdk/ndk/23.1.7779620/toolchains/llvm/prebuilt/darwin-x86_64/sysroot -Dfoo_EXPORTS -DANDROID -fdata-sections -ffunction-sections -funwind-tables -fstack-protector-strong -no-canonical-prefixes -D_FORTIFY_SOURCE=2 -march=armv7-a -mthumb -Wformat -Werror=format-security -fexceptions -O2 -g -DNDEBUG -fPIC -o CMakeFiles/foo.dir/message.c.o -c /private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/src/main/cpp/message.c",
+  "file": "/private/var/folders/0k/zcd89yf54csc6s91x35_9l3w004vxr/T/junit10889787307938400317/lib/src/main/cpp/message.c"
+}
+]
