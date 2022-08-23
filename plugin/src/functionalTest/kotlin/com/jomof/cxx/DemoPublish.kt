@@ -17,6 +17,8 @@ fun publishDemo(projectDir : File, demoName : String, readme : String) {
     gitignoreFile.writeText("""
         obj/
         bin/
+        .cxx/
+        build/
     """.trimIndent())
     readmeFile.writeText(readme)
     val localRepo = File("../../local-plugin-repository")
