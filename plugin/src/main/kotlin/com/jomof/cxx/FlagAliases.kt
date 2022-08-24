@@ -3,13 +3,9 @@ package com.jomof.cxx
 import groovy.lang.Closure
 import groovy.lang.GString
 
-interface FlagAliases {
-    val aliases : Map<String, FlagAlias>
-}
-
-class ConfigurableFlagAliases : FlagAliases {
+class ConfigurableFlagAliases {
     private val mutableAliases = mutableMapOf<String, FlagAlias>()
-    override val aliases : Map<String, FlagAlias> = mutableAliases
+    val aliases : Map<String, FlagAlias> = mutableAliases
 
     fun convertToSpaceSeparated(value : Any) : String {
         return when(value) {

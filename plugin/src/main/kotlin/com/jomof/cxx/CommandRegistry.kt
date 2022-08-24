@@ -1,7 +1,6 @@
 package com.jomof.cxx
 
 class CommandRegistry {
-    private var buffer = intArrayOf()
     private var commands = mutableListOf<BuildCommand>()
 
     fun all() = commands
@@ -14,19 +13,7 @@ class CommandRegistry {
         depfile: String?,
         flagAliases : Map<String, FlagAlias>
     ) {
-        val commandLine = command.flatMap { segment ->
-            if (buffer.size < minimumSizeOfTokenizeCommandLineBuffer(segment)) {
-                buffer = allocateTokenizeCommandLineBuffer(segment)
-            }
-
-            val tokens = TokenizedCommandLine(
-                commandLine = segment,
-                raw = true,
-                indexes = buffer
-            )
-            tokens.toTokenList()
-        }
-
+        val commandLine = command.flatMap { segment -> parseCommandLine(segment) }
         commands.add(BuildCommand(
             description = description,
             flagAliases = flagAliases,
