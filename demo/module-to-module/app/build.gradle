@@ -1,44 +1,40 @@
-            plugins {
-                id('com.github.jomof.cxx.core')
-            }
-            def usage = Attribute.of('usage', String)
-            configurations {
-                compile {
-                    attributes { attribute(usage, 'api') }
-                }
-            }
-            
-            configurations {
-                debug {
-//                    canBeConsumed = false
-//                    canBeResolved = true
-                }
-            }
-            
-            cxx {
-                var includes = importByAttribute("include")
-                var libraries = importByAttribute("library")
-                var compile = rule {
-                    description = "Building $out"
-                    depfile = "${out}.d"
-                    command = "/usr/bin/clang $cflags -c $in -o $out -MD -MF $depfile"
-                }
-                
-                var linkExe = rule {
-                    description = "Linking Executable $out"
-                    command = "/usr/bin/clang $in -o $out"
-                }
-                compile {
-                    in = "hello.c"
-                    out = "obj/hello.o"
-                    cflags = includes.expandFlag("-I")
-                }
-                linkExe {
-                    in = [ "obj/hello.o" ] + libraries
-                    out = "bin/hello"
-                }
-            }
-            
-            dependencies {
-                compile project(":lib")
-            }
+plugins {
+    id('com.github.jomof.cxx.core')
+}
+def usage = Attribute.of('usage', String)
+configurations {
+    compile {
+        attributes { attribute(usage, 'api') }
+    }
+}
+
+configurations {
+    debug { }
+}
+
+cxx {
+    var includes = importByAttribute("include")
+    var libraries = importByAttribute("library")
+    var compile = rule {
+        description = "Building $out"
+        depfile = "${out}.d"
+        command = "/usr/bin/clang $cflags -c $in -o $out -MD -MF $depfile"
+    }
+    var linkExe = rule {
+        description = "Linking Executable $out"
+        command = "/usr/bin/clang $in -o $out"
+    }
+    compile {
+        in = "hello.c"
+        out = "obj/hello.o"
+        cflags = includes.expandFlag("-I")
+    }
+    linkExe {
+        in = [ "obj/hello.o" ] + libraries
+        out = "bin/hello"
+    }
+}
+
+dependencies {
+    compile project(":lib")
+}

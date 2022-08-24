@@ -3,14 +3,9 @@
  */
 package com.jomof.cxx
 
-import com.android.build.gradle.internal.publishing.AndroidArtifacts
-import org.gradle.api.Action
 import org.gradle.api.Project
 import org.gradle.api.Plugin
-import org.gradle.api.artifacts.ArtifactView
 import org.gradle.api.artifacts.Configuration
-import org.gradle.api.attributes.AttributeContainer
-import org.gradle.api.file.ConfigurableFileCollection
 import java.io.File
 import java.io.OutputStream
 import java.util.concurrent.Callable
@@ -35,34 +30,9 @@ class NativePlugin: Plugin<Project> {
 
         project.afterEvaluate {
             // Key is output, value is task name or something we can depend on
-            val outputs = mutableMapOf<String, Any>()
+            val outputs = mutableMapOf<String, String>()
             val cleanFiles = mutableListOf<File>()
             project.assertProjectConfigurationsNotResolved()
-
-            val typedFiles = mutableMapOf<String, ConfigurableFileCollection>()
-
-
-            project.configurations.forEach { configuration : Configuration ->
-                if (configuration.isCanBeResolved) {
-                    for (artifactType in listOf("include", "library")) {
-                        val files = typedFiles.computeIfAbsent(artifactType) { project.objects.fileCollection() }
-
-                        val attributesAction =
-                            Action { container: AttributeContainer ->
-                                container.attribute(AndroidArtifacts.ARTIFACT_TYPE, artifactType)
-                            }
-
-                        files.from(configuration.incoming.artifactView { config: ArtifactView.ViewConfiguration ->
-                            config.attributes(attributesAction)
-                        }.files)
-//                        for (include in includes) {
-//                            println("----${include}")
-//                        }
-//                    val resolved = configuration.resolvedConfiguration
-//                    println("xxxxx[$resolved")
-                    }
-                }
-            }
 
             cxx.buildCommands.forEach { buildCommand ->
                 if (outputs.containsKey(buildCommand.output)) {
@@ -85,15 +55,8 @@ class NativePlugin: Plugin<Project> {
 
                     val sourceFiles = mutableListOf<SourceFiles>()
 
-                    buildCommand.namedEntities.forEach { (name, entity) ->
-
-                        when(entity) {
-                            is TaskTimeIterable -> {
-                                sourceFiles.add(SourceFiles(name, entity.getFileCollection(project), entity))
-                            }
-                            else -> error("Unsupported named entity type ${entity.javaClass}")
-                        }
-                       // configurationInputBuilders.add(it.value.buildable)
+                    buildCommand.flagAliases.forEach { (name, entity) ->
+                        sourceFiles.add(SourceFiles(name, entity.getFileCollection(project), entity))
                     }
 
                     task.parameters.set(
@@ -108,17 +71,11 @@ class NativePlugin: Plugin<Project> {
                             sourceFiles = sourceFiles
                         )
                     )
-                    buildCommand.referencedConfigurations.forEach { task.dependsOn(it) }
 
                     buildCommand.inputs.forEach { input ->
                         val producer = outputs[input]
                         if (producer != null) {
                             task.dependsOn(producer)
-                        } else {
-                            val uri = project.uri(input)
-                            if (uri.scheme == "file" && !File(uri).isFile) {
-                                error("Input $input did not exist")
-                            }
                         }
                     }
                 }

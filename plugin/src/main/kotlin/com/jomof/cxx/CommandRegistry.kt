@@ -1,8 +1,5 @@
 package com.jomof.cxx
 
-import org.gradle.api.artifacts.Configuration
-
-
 class CommandRegistry {
     private var buffer = intArrayOf()
     private var commands = mutableListOf<BuildCommand>()
@@ -10,49 +7,44 @@ class CommandRegistry {
     fun all() = commands
 
     fun add(
-        description: Any,
-        inputs: Any,
-        output: Any,
-        command: Any,
-        depfile: Any?,
-        namedEntities: Map<String, Any>,
-        referencedConfigurations: List<Configuration>
+        description: String,
+        inputs: List<String>,
+        output: String,
+        command: List<String>,
+        depfile: String?,
+        flagAliases : Map<String, FlagAlias>
     ) {
-        val namedEntityRecorder = namedEntities.toMutableMap()
-        val commandLine = convertToSpaceSeparated(command, namedEntityRecorder)
-        if (buffer.size < minimumSizeOfTokenizeCommandLineBuffer(commandLine)) {
-            buffer = allocateTokenizeCommandLineBuffer(commandLine)
+        val commandLine = command.flatMap { segment ->
+            if (buffer.size < minimumSizeOfTokenizeCommandLineBuffer(segment)) {
+                buffer = allocateTokenizeCommandLineBuffer(segment)
+            }
+
+            val tokens = TokenizedCommandLine(
+                commandLine = segment,
+                raw = true,
+                indexes = buffer
+            )
+            tokens.toTokenList()
         }
 
-        val tokens = TokenizedCommandLine(
-            commandLine = commandLine,
-            raw = true,
-            indexes = buffer
-        )
-
-        val inputsList = convertToStringList(inputs, namedEntityRecorder)
-            .filter { !namedEntityRecorder.containsKey(it) }
-
         commands.add(BuildCommand(
-            description = description.toString(),
-            namedEntities = namedEntityRecorder,
-            referencedConfigurations = referencedConfigurations,
-            inputs = inputsList,
-            output = output.toString(),
-            command = tokens.toTokenList(),
-            depfile = depfile?.toString()
+            description = description,
+            flagAliases = flagAliases,
+            inputs = inputs.filter { !flagAliases.containsKey(it) },
+            output = output,
+            command = commandLine,
+            depfile = depfile
         ))
     }
 }
 
 class BuildCommand(
     val description: String,
-    val namedEntities: Map<String, Any>,
+    val flagAliases: Map<String, FlagAlias>,
     val inputs: List<String>,
     val output: String,
     val command: List<String>,
-    val depfile: String?,
-    val referencedConfigurations: List<Configuration>
+    val depfile: String?
 )
 
 fun List<String>.removeMatchingElementAndNext(element : String, next : Int) : List<String> {

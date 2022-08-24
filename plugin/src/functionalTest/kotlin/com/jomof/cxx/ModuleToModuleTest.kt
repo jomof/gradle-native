@@ -65,10 +65,7 @@ class ModuleToModuleTest {
             }
             
             configurations {
-                debug {
-//                    canBeConsumed = false
-//                    canBeResolved = true
-                }
+                debug { }
             }
             
             cxx {
@@ -79,7 +76,6 @@ class ModuleToModuleTest {
                     depfile = "${'$'}{out}.d"
                     command = "/usr/bin/clang ${'$'}cflags -c ${'$'}in -o ${'$'}out -MD -MF ${'$'}depfile"
                 }
-                
                 var linkExe = rule {
                     description = "Linking Executable ${'$'}out"
                     command = "/usr/bin/clang ${'$'}in -o ${'$'}out"
