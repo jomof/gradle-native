@@ -16,6 +16,8 @@ plugins {
 
     id("maven-publish")
     id("com.gradle.plugin-publish") version "1.0.0"
+
+    id("com.google.cloud.artifactregistry.gradle-plugin") version "2.1.5"
 }
 
 repositories {
@@ -60,11 +62,10 @@ testing {
 }
 
 group = "com.github.jomof"
-version = "0.0.1"
+version = "0.0.2"
 
 gradlePlugin {
-    // Define the plugin
-    val greeting by plugins.creating {
+    val `native` by plugins.creating {
         id = "com.github.jomof.cxx.core"
         implementationClass = "com.jomof.cxx.NativePlugin"
     }
@@ -78,16 +79,20 @@ tasks.named<Task>("check") {
 }
 
 pluginBundle {
-    website = "<substitute your project website>"
-    vcsUrl = "<uri to project source repository>"
-    tags = listOf("tags", "for", "your", "plugins")
+    website = "https://github.com/jomof/gradle-native"
+    vcsUrl = "https://github.com/jomof/gradle-native"
+    tags = listOf("gradle", "C++", "C", "native")
 }
 
 publishing {
     repositories {
+//        maven {
+//            name = "localPluginRepository"
+//            url = uri("../local-plugin-repository")
+//        }
         maven {
-            name = "localPluginRepository"
-            url = uri("../local-plugin-repository")
+            name = "jomof-github-maven"
+            url = uri("artifactregistry://us-maven.pkg.dev/jomof-github/maven")
         }
     }
 }
